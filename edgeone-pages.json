@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "routes": [
+    {
+      "src": "/api/chat",
+      "dest": "/api/chat"
+    },
+    {
+      "src": "/api/*",
+      "dest": "/api/chat"
+    }
+  ],
+  "functions": {
+    "edge-functions/api/chat.js": {
+      "include": ["/api/chat", "/api/*"]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "functions": [
+    {
+      "pattern": "/api/chat",
+      "function": "edge-functions/api/chat.js"
+    },
+    {
+      "pattern": "/api/*",
+      "function": "edge-functions/api/chat.js"
+    }
+  ]
+}
