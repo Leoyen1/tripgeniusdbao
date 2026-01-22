@@ -1,0 +1,54 @@
+name: Deploy to Tencent Cloud EdgeOne Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run lint and type check
+      run: |
+        npm run lint --if-present
+        npm run typecheck --if-present
+
+    - name: Build project
+      run: npm run build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
+        retention-days: 7
+
+    - name: Deploy to EdgeOne Pages
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: TencentCloud/edgeone-pages-action@v1
+      with:
+        secret_id: ${{ secrets.TENCENT_CLOUD_SECRET_ID }}
+        secret_key: ${{ secrets.TENCENT_CLOUD_SECRET_KEY }}
+        edgeone_zone_id: ${{ secrets.EDGEONE_ZONE_ID }}
+        edgeone_pages_project_id: ${{ secrets.EDGEONE_PAGES_PROJECT_ID }}
+        dist_path: dist
+        build_command: npm run build
+        build_output: dist

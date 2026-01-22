@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TripGenius - AI大数据个性化旅行伴侣</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+      // 全局错误捕捉，防止白屏无提示
+      window.addEventListener('error', function(e) {
+        if(e.message === 'Script error.') return; // 忽略跨域脚本错误
+        const errDiv = document.createElement('div');
+        errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:rgba(255,0,0,0.9);color:white;padding:10px;z-index:9999;font-size:12px;';
+        errDiv.innerText = '系统运行错误 (如长时间白屏请检查网络): ' + e.message;
+        document.body.appendChild(errDiv);
+        setTimeout(() => errDiv.remove(), 5000);
+      });
+    </script>
+    <style>
+      /* Use system font stack for best performance in China */
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+      }
+      h1, h2, h3, .font-serif {
+        /* Fallback chain for serif fonts */
+        font-family: 'Songti SC', 'SimSun', 'Times New Roman', Times, serif;
+      }
+      /* Hide scrollbar for clean UI but keep functionality */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      /* Print styles for PDF export */
+      @media print {
+        @page {
+          margin: 0;
+          size: auto;
+        }
+        
+        body, html, #root {
+          height: auto !important;
+          width: 100% !important;
+          overflow: visible !important;
+        }
+
+        .no-print, header, footer {
+          display: none !important;
+          border: none !important;
+        }
+
+        main {
+          display: block !important;
+          overflow: visible !important;
+        }
+
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        /* Ensure backgrounds render */
+        .bg-slate-50, .bg-slate-900, .bg-blue-600 {
+           print-color-adjust: exact !important;
+        }
+
+        .page-break {
+          page-break-before: always;
+          break-before: page;
+          min-height: 100vh;
+        }
+
+        .break-inside-avoid {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "@netlify/functions": "https://esm.sh/@netlify/functions@^2.6.0",
+    "react": "https://esm.sh/react@18.3.1",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "vite": "https://esm.sh/vite@^5.2.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^4.2.1",
+    "@netlify/edge-functions": "https://esm.sh/@netlify/edge-functions@^2.0.0",
+    "url": "https://esm.sh/url@^0.11.3",
+    "cors": "https://esm.sh/cors@^2.8.5",
+    "path": "https://esm.sh/path@^0.12.7",
+    "node-fetch": "https://esm.sh/node-fetch@^3.3.2",
+    "dotenv": "https://esm.sh/dotenv@^16.4.5",
+    "express": "https://esm.sh/express@^4.19.2",
+    "fs": "https://esm.sh/fs@^0.0.1-security"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-50 text-slate-900 antialiased h-screen overflow-hidden">
+    <div id="root" class="h-full w-full"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
