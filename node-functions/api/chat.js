@@ -116,7 +116,7 @@ export default async function onRequest(context) {
 
     // JSON结构指令
     const JSON_STRUCTURE_INSTRUCTION = `
-请严格按照以下 JSON 格式输出，不要包含任何 markdown 代码块标记（如 \\`\\`\\`json），只返回纯 JSON 字符串：
+请严格按照以下 JSON 格式输出，不要包含任何 markdown 代码块标记（如 \`\`\`json），只返回纯 JSON 字符串：
 
 {
   "title": "旅行标题",
@@ -181,15 +181,15 @@ export default async function onRequest(context) {
 **核心原则与指令**：
 1. **真实天气强制执行**：
    - 系统将为你提供【官方实时气象台数据】。
-   - 你生成的 JSON 中，daily_plan 里的 \\`weather\\` 和 \\`temperature\\` 字段 **必须** 直接复制这些真实数据，严禁自行编造或使用模糊描述。
+   - 你生成的 JSON 中，daily_plan 里的 \`weather\` 和 \`temperature\` 字段 **必须** 直接复制这些真实数据，严禁自行编造或使用模糊描述。
    - 如果遇到雨天，行程安排必须推荐室内活动或备选方案。
 
 2. **预算严格执法 (Critical)**：
    - 用户的【住宿预算】是硬性指标。
-   - **严格匹配**：酒店的 \\`booking_info\\` 价格必须在用户预算的 **±20%** 范围内。
+   - **严格匹配**：酒店的 \`booking_info\` 价格必须在用户预算的 **±20%** 范围内。
    - 错误示例：用户预算 400元，你推荐 1200元的酒店（❌ 绝对禁止）。
    - 正确示例：用户预算 400元，你推荐 350元-450元的酒店（✅ 正确）。
-   - 如果该价格段很难找到豪华酒店，请诚实推荐高评分的经济型酒店或民宿，并在 \\`recommendation_logic\\` 中说明。
+   - 如果该价格段很难找到豪华酒店，请诚实推荐高评分的经济型酒店或民宿，并在 \`recommendation_logic\` 中说明。
 
 3. **完整性**：确保所有字段都有值。严禁输出多余的寒暄语，只输出 JSON。
 
