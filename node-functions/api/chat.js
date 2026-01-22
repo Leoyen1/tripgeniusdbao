@@ -4,7 +4,8 @@
  * 兼容EdgeOne Pages Node.js函数规范
  */
 
-export default async function handler(request) {
+export default async function onRequest(context) {
+  const { request, env } = context;
   // 设置CORS头
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -31,8 +32,8 @@ export default async function handler(request) {
 
   try {
     // 获取环境变量
-    const API_KEY = process.env.API_KEY;
-    const MODEL_ID = process.env.DOUBAO_MODEL_ID || 'Doubao-Seed-1.6-flash';
+    const API_KEY = env?.API_KEY || process.env.API_KEY;
+    const MODEL_ID = env?.DOUBAO_MODEL_ID || process.env.DOUBAO_MODEL_ID || 'Doubao-Seed-1.6-flash';
 
     if (!API_KEY) {
       return new Response(JSON.stringify({ 
