@@ -248,6 +248,20 @@ export default async function onRequest(context) {
 
     // 获取完整响应
     const responseData = await upstreamResponse.json();
+    
+    // 检查响应数据结构
+    if (!responseData || !responseData.choices || !responseData.choices[0] || !responseData.choices[0].message || !responseData.choices[0].message.content) {
+      return new Response(JSON.stringify({ 
+        error: `AI 服务响应格式错误: ${JSON.stringify(responseData)}` 
+      }), {
+        status: 500,
+        headers: { 
+          'Content-Type': 'application/json',
+          ...corsHeaders 
+        }
+      });
+    }
+    
     const aiResponse = responseData.choices[0].message.content;
     
     // 返回普通响应
