@@ -146,166 +146,124 @@ const SYSTEM_INSTRUCTION = `
 ${JSON_STRUCTURE_INSTRUCTION}
 `;
 
-export default {
-  async fetch(request, env) {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age": "86400",
-    };
+export default async function onRequest(context) {
+  const { request, env } = context;
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400",
+  };
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
+  if (request.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
+  }
+
+  try {
+    const API_KEY = env.API_KEY; 
+    const MODEL_ID = env.DOUBAO_MODEL_ID;
+
+    if (!API_KEY || !MODEL_ID) {
+      return new Response(JSON.stringify({ error: "服务器配置错误：缺少 API_KEY 或 DOUBAO_MODEL_ID" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
     }
 
-    if (request.method !== "POST") {
-      return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
-    }
+    const body = await request.json();
+    const { action, data } = body;
+    let messages = [];
 
-    try {
-      const API_KEY = env.API_KEY; 
-      const MODEL_ID = env.DOUBAO_MODEL_ID;
-
-      if (!API_KEY || !MODEL_ID) {
-        return new Response(JSON.stringify({ error: "服务器配置错误：缺少 API_KEY 或 DOUBAO_MODEL_ID" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders }
-        });
-      }
-
-      const body = await request.json();
-      const { action, data } = body;
-      let messages = [];
-
-      let realWeatherContext = "";
-      if (action === 'generate' && data.destination && data.start_date && data.end_date) {
-        const coords = await getDestinationCoords(data.destination);
-        if (coords) {
-          const weather = await getRealWeather(coords.lat, coords.lon, data.start_date, data.end_date);
-          if (weather) {
-            realWeatherContext = `\n\n=== ⚠️ 必须使用的实时数据 ===\n${weather}\n请根据上述具体的每日天气安排行程。`;
-          }
+    let realWeatherContext = "";
+    if (action === 'generate' && data.destination && data.start_date && data.end_date) {
+      const coords = await getDestinationCoords(data.destination);
+      if (coords) {
+        const weather = await getRealWeather(coords.lat, coords.lon, data.start_date, data.end_date);
+        if (weather) {
+          realWeatherContext = `\n\n=== ⚠️ 必须使用的实时数据 ===\n${weather}\n请根据上述具体的每日天气安排行程。`;
         }
       }
+    }
 
-      if (action === 'generate') {
-        const formData = data;
-        const userPrompt = `
+    if (action === 'generate') {
+      const formData = data;
+      const userPrompt = `
           请为我生成一份去 ${formData.destination} 的旅行计划。
           参数: ${formData.start_date}至${formData.end_date}, ${formData.people_count}人, 住宿预算${formData.accommodation_budget}元, 总预算${formData.budget}元/人, 风格${formData.travel_style.join(",")}.
           备注: ${formData.remarks || "无"}
           ${realWeatherContext}
           请生成详细 JSON。
         `;
-        messages = [
-          { role: "system", content: SYSTEM_INSTRUCTION },
-          { role: "user", content: userPrompt }
-        ];
-      } else if (action === 'modify') {
-        const { currentPlan, rejectedItems, userRemark } = data;
-        const rejectedDesc = rejectedItems.map(item => `第 ${item.day} 天: ${item.activityTitle}`).join(", ");
-        const planContext = JSON.stringify(currentPlan).slice(0, 15000);
-        messages = [
-          { role: "system", content: SYSTEM_INSTRUCTION },
-          { role: "user", content: `原计划参考: ${planContext}... \n\n 用户移除: ${rejectedDesc}。反馈: "${userRemark}"。请重新规划。` }
-        ];
-      } else if (action === 'chat') {
-        const { currentPlan, chatHistory, userMessage } = data;
-        const systemContext = `你是一个旅行助手。基于此计划回答: ${JSON.stringify(currentPlan).slice(0, 8000)}...`;
-        const recentHistory = (chatHistory || []).slice(-6).map(m => ({
-          role: m.role === 'model' ? 'assistant' : 'user', 
-          content: m.text
-        }));
-        messages = [
-          { role: "system", content: systemContext },
-          ...recentHistory,
-          { role: "user", content: userMessage }
-        ];
-      }
+      messages = [
+        { role: "system", content: SYSTEM_INSTRUCTION },
+        { role: "user", content: userPrompt }
+      ];
+    } else if (action === 'modify') {
+      const { currentPlan, rejectedItems, userRemark } = data;
+      const rejectedDesc = rejectedItems.map(item => `第 ${item.day} 天: ${item.activityTitle}`).join(", ");
+      const planContext = JSON.stringify(currentPlan).slice(0, 15000);
+      messages = [
+        { role: "system", content: SYSTEM_INSTRUCTION },
+        { role: "user", content: `原计划参考: ${planContext}... \n\n 用户移除: ${rejectedDesc}。反馈: "${userRemark}"。请重新规划。` }
+      ];
+    } else if (action === 'chat') {
+      const { currentPlan, chatHistory, userMessage } = data;
+      const systemContext = `你是一个旅行助手。基于此计划回答: ${JSON.stringify(currentPlan).slice(0, 8000)}...`;
+      const recentHistory = (chatHistory || []).slice(-6).map(m => ({
+        role: m.role === 'model' ? 'assistant' : 'user', 
+        content: m.text
+      }));
+      messages = [
+        { role: "system", content: systemContext },
+        ...recentHistory,
+        { role: "user", content: userMessage }
+      ];
+    }
 
-      const upstreamResponse = await fetch("https://ark.cn-beijing.volces.com/api/v3/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          model: MODEL_ID,
-          messages: messages,
-          temperature: 0.5,
-          stream: true
-        })
-      });
+    const upstreamResponse = await fetch("https://ark.cn-beijing.volces.com/api/v3/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model: MODEL_ID,
+        messages: messages,
+        temperature: 0.5,
+        stream: false
+      })
+    });
 
-      if (!upstreamResponse.ok) {
-        const errText = await upstreamResponse.text();
-        return new Response(JSON.stringify({ error: `AI 服务异常: ${upstreamResponse.status} ${errText}` }), {
-           status: 500,
-           headers: { "Content-Type": "application/json", ...corsHeaders }
-        });
-      }
-
-      const { readable, writable } = new TransformStream();
-      const writer = writable.getWriter();
-      const textEncoder = new TextEncoder();
-      const textDecoder = new TextDecoder();
-      
-      (async () => {
-        const reader = upstreamResponse.body.getReader();
-        let buffer = "";
-        
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            buffer += textDecoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || "";
-            
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (trimmed.startsWith('data: ')) {
-                const dataStr = trimmed.substring(6);
-                if (dataStr === '[DONE]') continue;
-                try {
-                  const json = JSON.parse(dataStr);
-                  const content = json.choices?.[0]?.delta?.content || "";
-                  if (content) {
-                    await writer.write(textEncoder.encode(content));
-                  }
-                } catch (e) {}
-              }
-            }
-          }
-          if (buffer.trim().startsWith('data: ')) {
-             try {
-                const json = JSON.parse(buffer.trim().substring(6));
-                const content = json.choices?.[0]?.delta?.content || "";
-                if (content) await writer.write(textEncoder.encode(content));
-             } catch(e) {}
-          }
-        } catch (e) {
-          console.error("Stream error", e);
-          await writer.write(textEncoder.encode(`\n[Stream Error: ${e.message}]`));
-        } finally {
-          await writer.close();
-        }
-      })();
-
-      return new Response(readable, {
-        headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-          ...corsHeaders
-        }
-      });
-
-    } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders }
+    if (!upstreamResponse.ok) {
+      const errText = await upstreamResponse.text();
+      return new Response(JSON.stringify({ error: `AI 服务异常: ${upstreamResponse.status} ${errText}` }), {
+         status: 500,
+         headers: { "Content-Type": "application/json", ...corsHeaders }
       });
     }
+
+    // 获取完整响应
+    const responseData = await upstreamResponse.json();
+    const aiResponse = responseData.choices[0].message.content;
+    
+    // 返回普通响应
+    return new Response(aiResponse, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain',
+        ...corsHeaders
+      }
+    });
+
+  } catch (error) {
+    console.error("Edge Function Error:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders }
+    });
   }
-};
+}
