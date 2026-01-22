@@ -1,6 +1,6 @@
 import { TravelFormData, TripPlan, ChatMessage } from "../types";
 
-// Retry helper: 专治 405 和 404
+// Retry helper: 专治 405 和 404，兼容EdgeOne Pages多种函数类型
 const retryFetch = async (url: string, options: RequestInit, retries = 3): Promise<Response> => {
   const baseUrl = url.split('?')[0].replace(/\/$/, ''); // 移除可能的尾部斜杠和查询参数
   const query = url.split('?')[1] ? `?${url.split('?')[1]}` : '';
@@ -8,12 +8,14 @@ const retryFetch = async (url: string, options: RequestInit, retries = 3): Promi
   let lastError: any;
 
   // 尝试策略：
-  // 1. 原始路径 (例如 /api/chat)
-  // 2. 带斜杠路径 (例如 /api/chat/) - 很多 405 错误是因为缺少这个
-  // 3. 再次尝试原始路径
+  // 1. 原始路径 (/api/chat) - EdgeOne Pages标准路径
+  // 2. 带斜杠路径 (/api/chat/) - 兼容某些配置
+  // 3. 备用路径 (/edgeone/chat) - 兼容旧版配置
+  // 4. 再次尝试原始路径
   const tryUrls = [
     `${baseUrl}${query}`,
     `${baseUrl}/${query}`, 
+    `${baseUrl.replace('/api/', '/edgeone/')}${query}`,
     `${baseUrl}${query}`
   ];
 
@@ -30,7 +32,7 @@ const retryFetch = async (url: string, options: RequestInit, retries = 3): Promi
       if (res.status === 404 || res.status === 405) {
         console.warn(`[AI Service] Failed with ${res.status} at ${currentUrl}. Retrying with alternate path...`);
         if (i < retries - 1) {
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 500));
           continue; 
         }
       }
@@ -40,7 +42,7 @@ const retryFetch = async (url: string, options: RequestInit, retries = 3): Promi
       
     } catch (err: any) {
       lastError = err;
-      if (i < retries - 1) await new Promise(r => setTimeout(r, 1000));
+      if (i < retries - 1) await new Promise(r => setTimeout(r, 500));
     }
   }
   throw lastError;
@@ -59,8 +61,8 @@ const callBackendAPI = async (action: 'generate' | 'modify' | 'chat', data: any)
     }, 3);
 
     if (!response.ok) {
-      if (response.status === 404) throw new Error("错误 (404): 未找到边缘函数服务。\n可能原因：edge-functions 目录未正确部署。");
-      if (response.status === 405) throw new Error("错误 (405): 请求方法被拒绝。\n这通常意味着请求打到了静态页面而非边缘函数。\n请检查 edge-functions/api/chat.js 是否部署成功。");
+      if (response.status === 404) throw new Error("错误 (404): 未找到API服务。\n可能原因：\n1. EdgeOne Pages边缘函数未正确部署\n2. 检查 edge-functions/api/chat.js 是否存在\n3. 检查 node-functions/api/chat.js 是否存在");
+      if (response.status === 405) throw new Error("错误 (405): 请求方法不被允许。\n可能原因：\n1. 请求打到了静态页面而非函数\n2. EdgeOne Pages路由配置问题\n3. 函数文件格式不符合规范\n\n解决方案：\n1. 检查EdgeOne Pages控制台函数部署状态\n2. 确认环境变量 API_KEY 已正确设置");
       
       let msg = `请求失败 (${response.status})`;
       try { const json = await response.json(); if(json.error) msg = json.error; } catch(e){}
