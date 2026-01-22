@@ -257,7 +257,7 @@ ${JSON_STRUCTURE_INSTRUCTION}
         model: MODEL_ID,
         messages: messages,
         temperature: 0.5,
-        stream: true
+        stream: false
       })
     });
 
@@ -274,10 +274,15 @@ ${JSON_STRUCTURE_INSTRUCTION}
       });
     }
 
-    // 返回流式响应
-    return new Response(upstreamResponse.body, {
+    // 获取完整响应
+    const responseData = await upstreamResponse.json();
+    const aiResponse = responseData.choices[0].message.content;
+    
+    // 返回普通响应
+    return new Response(aiResponse, {
+      status: 200,
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'text/plain',
         ...corsHeaders
       }
     });
