@@ -97,7 +97,7 @@ export default async function onRequest(context) {
         const data = await res.json();
         if (!data.daily) return null;
 
-        let weatherReport = "【官方实时气象台数据】：\\n";
+        let weatherReport = "【官方实时气象台数据】：\n";
         const daily = data.daily;
         
         for (let i = 0; i < daily.time.length; i++) {
@@ -105,7 +105,7 @@ export default async function onRequest(context) {
           const maxT = daily.temperature_2m_max[i];
           const minT = daily.temperature_2m_min[i];
           const weather = wmoCodeToChinese(daily.weather_code[i]);
-          weatherReport += `- ${date}: ${weather}, ${minT}°C 至 ${maxT}°C\\n`;
+          weatherReport += `- ${date}: ${weather}, ${minT}°C 至 ${maxT}°C\n`;
         }
         return weatherReport;
       } catch (e) {
@@ -205,7 +205,7 @@ ${JSON_STRUCTURE_INSTRUCTION}
       if (coords) {
         const weather = await getRealWeather(coords.lat, coords.lon, data.start_date, data.end_date);
         if (weather) {
-          realWeatherContext = `\\n\\n=== ⚠️ 必须使用的实时数据 ===\\n${weather}\\n请根据上述具体的每日天气安排行程。`;
+          realWeatherContext = `\n\n=== ⚠️ 必须使用的实时数据 ===\n${weather}\n请根据上述具体的每日天气安排行程。`;
         }
       }
     }
