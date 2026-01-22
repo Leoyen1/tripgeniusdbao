@@ -48,8 +48,8 @@ const retryFetch = async (url: string, options: RequestInit, retries = 3): Promi
 
 const callBackendAPI = async (action: 'generate' | 'modify' | 'chat', data: any) => {
   try {
-    // EdgeOne边缘函数路径
-    const apiUrl = `/edgeone/chat?t=${Date.now()}`;
+    // EdgeOne Pages边缘函数路径
+    const apiUrl = `/api/chat?t=${Date.now()}`;
 
     const response = await retryFetch(apiUrl, {
       method: "POST",
@@ -59,8 +59,8 @@ const callBackendAPI = async (action: 'generate' | 'modify' | 'chat', data: any)
     }, 3);
 
     if (!response.ok) {
-      if (response.status === 404) throw new Error("错误 (404): 未找到云函数服务。\n可能原因：Functions 目录未正确部署。");
-      if (response.status === 405) throw new Error("错误 (405): 请求方法被拒绝。\n这通常意味着请求打到了静态页面而非云函数。\n请检查 functions/api/chat/index.js 是否部署成功。");
+      if (response.status === 404) throw new Error("错误 (404): 未找到边缘函数服务。\n可能原因：edge-functions 目录未正确部署。");
+      if (response.status === 405) throw new Error("错误 (405): 请求方法被拒绝。\n这通常意味着请求打到了静态页面而非边缘函数。\n请检查 edge-functions/api/chat.js 是否部署成功。");
       
       let msg = `请求失败 (${response.status})`;
       try { const json = await response.json(); if(json.error) msg = json.error; } catch(e){}
